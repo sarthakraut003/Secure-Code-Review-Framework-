@@ -1,1 +1,84 @@
+===================================================================
+   FRAMEWORK ARCHITECTURE DOCUMENT
+   DevSecOps Framework | NodeGoat Project
+===================================================================
+
+[1] SYSTEM DESIGN OVERVIEW
+The framework implements a "Shift-Left" security pipeline designed to
+detect vulnerabilities early in the SDLC. It utilizes a modular,
+containerized architecture orchestrated by Bash scripts and Python ETL.
+
+[2] COMPONENT DIAGRAM
+-------------------------------------------------------------------
+[Source Code] --> [Orchestrator (demo_mode.sh)]
+                        |
+    +-------------------+-------------------+-------------------+
+    |                   |                   |                   |
+[Secret Scan]       [SCA Scan]          [SAST Scan]        [Deep SAST]
+(Gitleaks)      (Dependency-Check)      (Semgrep)         (SonarQube)
+    |                   |                   |                   |
+    v                   v                   v                   v
+[JSON Report]      [HTML/XML Report]   [JSON Report]       [SQL DB]
+    |                   |                   |
+    +-------------------+-------------------+
+                        |
+              [Data Transformation Layer]
+                (glue.py / Python ETL)
+                        |
+                        v
+              [Unified Metrics JSON]
+                        |
+              [Data Server (Port 9999)]
+                        |
+                        v
+              [Grafana Dashboard (Port 3000)]
+
+[3] TOOLCHAIN SPECIFICATIONS
+-------------------------------------------------------------------
+1. Gitleaks (v8.x):
+   - Purpose: Secret Detection (API Keys, Passwords).
+   - Configuration: Regex-based entropy scanning.
+   - Output: JSON.
+
+2. OWASP Dependency-Check (v12.0.2):
+   - Purpose: Software Composition Analysis (SCA).
+   - Database: NVD (National Vulnerability Database) via API Key.
+   - Output: HTML (Detailed) & XML (Parsing).
+
+3. Semgrep (Community):
+   - Purpose: Lightweight SAST for logic flaws.
+   - Ruleset: p/security-audit (OWASP Top 10 focus).
+   - Output: JSON.
+
+4. Grafana (v10.x):
+   - Purpose: Visualization.
+   - Plugin: Yesoreyeram Infinity Datasource.
+   - Source: Local HTTP Server (http://172.17.0.1:9999).
+
+[4] DIRECTORY STRUCTURE
+-------------------------------------------------------------------
+~/Internship_Project/
+  ├── NodeGoat/               # Target Application
+  │   └── security_reports/   # Central Log Repository
+  ├── dependency-check/       # Local Scanner Binary
+  ├── glue.py                 # ETL Middleware Script
+  └── demo_mode.sh            # Pipeline Orchestrator
+
+[5] ENTERPRISE SCALABILITY & CI/CD INTEGRATION
+While currently optimized for a local environment, this framework is 
+designed for horizontal scalability in enterprise CI/CD pipelines:
+
+1. GitHub Actions / GitLab CI: The demo_mode.sh logic can be converted 
+   into pipeline stages. Dockerized scanners allow for "Ephemeral 
+   Runners" that scale up and down based on pull request volume.
+2. Centralized Reporting: In a large-scale setup, the glue.py ETL would 
+   push metrics to a central Prometheus or Elasticsearch instance 
+   rather than a local JSON file.
+
+[6] FUTURE WORK & ROADMAP
+To further enhance the framework, the following extensions are proposed:
+1. DAST Integration: Adding OWASP ZAP to scan the running application.
+2. Vulnerability Correlation: Implementing DefectDojo to merge duplicate 
+   findings from different scanners.
+3. Slack/Jira Integration: Automated alerting for critical findings.
 
