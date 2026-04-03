@@ -1,0 +1,4 @@
+# Ignore the security reports directory to prevent recursive scanning
+security_reports/
+NodeGoat/security_reports/
+pipeline.log
